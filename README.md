@@ -1,27 +1,29 @@
-# VGC Training Simulation
+# VGC Training Simulation (Work in Progress)
 
 This project aims to create a training simulation for Pokémon VGC (Video Game Championships) battles. The simulation will help players practice and improve their competitive battling skills.
 
-# Stage 1:
-Working on suggesting correct 4 pokemons based on input from a player.
-AI will suggest best 4 pokemons that can beat a player's team.
+## Current Progress
 
-# Pokemon Team Parser
+### Completed Features
+- Implemented a Pokemon team parser that converts text-based team formats into structured JSON
+- Added support for parsing complete Pokemon data including:
+  - Pokemon names and held items
+  - Abilities, levels, and Tera types
+  - EVs (Effort Values) and IVs (Individual Values)
+  - Natures and moves
+  - Multiple Pokemon in a single team file
 
-A TypeScript parser for Pokemon team data that converts text-based team formats into structured JSON data.
+### In Development
+- AI-powered team suggestion system that will recommend 4 Pokemon to counter a player's team
+- Battle simulation features (planned)
 
-## Installation
+## Pokemon Team Parser
 
-1. Clone the repository
-2. Install dependencies:
-```bash
-npm install
-```
+### Usage
 
-## Usage
+The parser converts Pokemon team data from the standard text format from Pokepaste into a structured JSON format. Here's an example:
 
-The parser can convert Pokemon team data from the standard text format into a structured JSON format. Here's an example of the input format:
-
+Input format:
 ```
 Lunala @ Electric Seed  
 Ability: Shadow Shield  
@@ -36,8 +38,7 @@ IVs: 0 Atk
 - Wide Guard  
 ```
 
-And it will be converted to:
-
+Output JSON:
 ```json
 {
   "name": "Lunala",
@@ -74,70 +75,44 @@ And it will be converted to:
 ### Example Code
 
 ```typescript
-import { readFile } from 'fs/promises';
-import { parseTeamFile } from './utils/teamParser.js';
-
-// Read and parse a team file
-const teamContent = await readFile('path/to/team.txt', 'utf-8');
-const team = parseTeamFile(teamContent);
-console.log(JSON.stringify(team, null, 2));
-```
-
-## Building
-
-To build the project:
-
-```bash
-npm run build
-```
-
-## Running the Example
-
-To run the example code that parses sample team files:
-
-```bash
-npm start
-```
-
-## Features
-
-- Parses Pokemon names and held items
-- Extracts abilities, levels, and Tera types
-- Parses EVs (Effort Values) and IVs (Individual Values)
-- Captures natures and moves
-- Handles missing values with appropriate defaults
-- Supports multiple Pokemon in a single team file
-
-## Type Definitions
-
-The parser provides TypeScript type definitions for the parsed data:
-
-```typescript
-interface PokemonStats {
-    hp: number;
-    atk: number;
-    def: number;
-    spa: number;
-    spd: number;
-    spe: number;
-}
-
-interface Pokemon {
-    name: string;
-    item: string;
-    ability: string;
-    level: number;
-    teraType: string;
-    evs: PokemonStats;
-    nature: string;
-    ivs: {
-        hp: number | null;
-        atk: number | null;
-        def: number | null;
-        spa: number | null;
-        spd: number | null;
-        spe: number | null;
+const getAIService = (baseUrl: string, model: string) => {
+    const generateResponse = async (messages: Message[]): Promise<string> => {
+        const response = await fetch(`${baseUrl}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model,
+                messages,
+                stream: false
+            })
+        });
+        if (!response.ok) {
+            throw new Error('Failed to generate response');
+        }
+        const data = await response.json() as OllamaResponse;
+        return data.message.content;
     };
-    moves: string[];
-}
+
+    const suggestPokemon = async (input: string): Promise<string> => {
+        const cleanInput = input.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        const messages: Message[] = [
+            {
+                role: 'system',
+                content: 'You are a Pokemon database. STRICT MATCHING RULES:\n1. FIRST try exact prefix matches\n2. Then try common misspellings or partial matches\n3. Return EXACTLY ONE real Pokemon name\n4. ONLY lowercase letters and hyphens\n5. NO explanations or lists\n6. NO made-up Pokemon\n\nExamples of matches:\n"kor" → "koraidon"\n"ho" or "ho-" → "ho-oh"\n"amoon" or "amon" → "amoonguss"\n"pory" → "porygon-z"\n"type" → "type-null"\n"char" → "charizard"\n"cind" → "cinderace"\n"drag" → "dragonite"\n"sala" → "salamence"\n"gard" → "gardevoir"'
+            },
+            {
+                role: 'user',
+                content: cleanInput
+            }
+        ];
+        const response = await generateResponse(messages);
+        const cleaned = response.trim().toLowerCase();
+        return cleaned.match(/^[a-z0-9-]+$/)?.[0] || cleanInput;
+    };
+
+    return {
+        generateResponse,
+        suggestPokemon,
+    };
+};
 ```

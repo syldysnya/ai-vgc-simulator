@@ -45,34 +45,6 @@ const getAIService = (baseUrl: string, model: string) => {
         return data.message.content;
     };
 
-    const analyzePokemon = async (pokemonName: string): Promise<string> => {
-        const messages: Message[] = [
-            {
-                role: 'system',
-                content: 'You are a Pokemon VGC expert. Analyze Pokemon for competitive battles.'
-            },
-            {
-                role: 'user',
-                content: `Analyze ${pokemonName} for VGC battles. Consider its strengths, weaknesses, common roles, and typical teammates.`
-            }
-        ];
-        return generateResponse(messages);
-    };
-
-    const suggestCounters = async (pokemonName: string): Promise<string> => {
-        const messages: Message[] = [
-            {
-                role: 'system',
-                content: 'You are a Pokemon VGC expert. Suggest counters for Pokemon in competitive battles.'
-            },
-            {
-                role: 'user',
-                content: `What are the best counters to ${pokemonName} in VGC? Consider type matchups, common moves, and abilities.`
-            }
-        ];
-        return generateResponse(messages);
-    };
-
     const suggestPokemon = async (input: string): Promise<string> => {
         const cleanInput = input.toLowerCase().replace(/[^a-z0-9-]/g, '');
         const messages: Message[] = [
@@ -92,8 +64,6 @@ const getAIService = (baseUrl: string, model: string) => {
 
     return {
         generateResponse,
-        analyzePokemon,
-        suggestCounters,
         suggestPokemon,
     };
 };
